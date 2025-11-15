@@ -1,0 +1,80 @@
+Experiment 2: L2/OVS with custom flows
+
+### Before adding flows
+$ h1 ping -c 1 10.0.0.3
+PING 10.0.0.3 (10.0.0.3) 56(84) bytes of data.
+64 bytes from 10.0.0.3: icmp_seq=1 ttl=64 time=0.794 ms
+
+--- 10.0.0.3 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.794/0.794/0.794/0.000 ms
+
+$ h2 ping -c 1 10.0.0.3
+PING 10.0.0.3 (10.0.0.3) 56(84) bytes of data.
+From 10.0.0.2 icmp_seq=1 Destination Host Unreachable
+
+--- 10.0.0.3 ping statistics ---
+1 packets transmitted, 0 received, +1 errors, 100% packet loss, time 0ms
+
+
+### sudo ovs-ofctl show s1
+OFPT_FEATURES_REPLY (xid=0x2): dpid:0000000000000001
+n_tables:254, n_buffers:0
+capabilities: FLOW_STATS TABLE_STATS PORT_STATS QUEUE_STATS ARP_MATCH_IP
+actions: output enqueue set_vlan_vid set_vlan_pcp strip_vlan mod_dl_src mod_dl_dst mod_nw_src mod_nw_dst mod_nw_tos mod_tp_src mod_tp_dst
+ 1(s1-eth1): addr:1a:ea:f7:a1:5f:67
+     config:     0
+     state:      0
+     current:    10GB-FD COPPER
+     speed: 10000 Mbps now, 0 Mbps max
+ 2(s1-eth2): addr:0a:df:e0:21:d0:5d
+     config:     0
+     state:      0
+     current:    10GB-FD COPPER
+     speed: 10000 Mbps now, 0 Mbps max
+ 3(s1-eth3): addr:a2:fe:00:ad:1f:8f
+     config:     0
+     state:      0
+     current:    10GB-FD COPPER
+     speed: 10000 Mbps now, 0 Mbps max
+ LOCAL(s1): addr:42:8b:81:8b:a7:47
+     config:     PORT_DOWN
+     state:      LINK_DOWN
+     speed: 0 Mbps now, 0 Mbps max
+OFPT_GET_CONFIG_REPLY (xid=0x4): frags=normal miss_send_len=0
+
+### sudo ovs-ofctl dump-flows s1 (initial)
+NXST_FLOW reply (xid=0x4):
+ cookie=0x0, duration=108.096s, table=0, n_packets=6, n_bytes=252, idle_age=1, in_port=2 actions=drop
+ cookie=0x0, duration=101.472s, table=0, n_packets=4, n_bytes=280, idle_age=3, in_port=1 actions=output:3
+ cookie=0x0, duration=790.335s, table=0, n_packets=53, n_bytes=4114, idle_age=3, priority=0 actions=NORMAL
+
+### Flow commands used on s1
+sudo ovs-ofctl add-flow s1 'priority=100,in_port=2,actions=drop'
+sudo ovs-ofctl add-flow s1 'priority=100,in_port=1,actions=output:3'
+
+### sudo ovs-ofctl dump-flows s1 (after)
+NXST_FLOW reply (xid=0x4):
+ cookie=0x0, duration=108.117s, table=0, n_packets=6, n_bytes=252, idle_age=1, in_port=2 actions=drop
+ cookie=0x0, duration=101.493s, table=0, n_packets=4, n_bytes=280, idle_age=3, in_port=1 actions=output:3
+ cookie=0x0, duration=0.012s, table=0, n_packets=0, n_bytes=0, idle_age=0, priority=100,in_port=2 actions=drop
+ cookie=0x0, duration=0.005s, table=0, n_packets=0, n_bytes=0, idle_age=0, priority=100,in_port=1 actions=output:3
+ cookie=0x0, duration=790.356s, table=0, n_packets=53, n_bytes=4114, idle_age=3, priority=0 actions=NORMAL
+
+### After adding flows
+$ h1 ping -c 1 10.0.0.3
+PING 10.0.0.3 (10.0.0.3) 56(84) bytes of data.
+64 bytes from 10.0.0.3: icmp_seq=1 ttl=64 time=0.067 ms
+
+--- 10.0.0.3 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.067/0.067/0.067/0.000 ms
+
+$ h2 ping -c 1 10.0.0.3
+PING 10.0.0.3 (10.0.0.3) 56(84) bytes of data.
+From 10.0.0.2 icmp_seq=1 Destination Host Unreachable
+
+--- 10.0.0.3 ping statistics ---
+1 packets transmitted, 0 received, +1 errors, 100% packet loss, time 0ms
+
+
