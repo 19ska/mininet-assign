@@ -129,7 +129,7 @@ def run():
     info('*** Results written to result1.txt\n')
     info('*** All ping tests completed\n')
     
-    # Optional: Start CLI for manual testing
+    
     info('*** Starting CLI (type "exit" to quit)\n')
     CLI(net)
     
